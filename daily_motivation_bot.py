@@ -90,7 +90,7 @@ async def set_frequency(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     )
 
     # Schedule the first job immediately
-    context.job_queue.run_repeating(send_daily_quote, interval=frequency_Hours * 3600, first=0, data={'chat_id': update.message.chat_id, 'category': category})
+    await context.job_queue.run_repeating(send_daily_quote, interval=frequency_Hours * 3600, first=0, data={'chat_id': update.message.chat_id, 'category': category})
 
     return ConversationHandler.END
 
@@ -124,11 +124,14 @@ async def daily_quote(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 def main() -> None:
     application = Application.builder().token(token).build()
 
+    # Ensure any previous webhook is removed
+    application.bot.delete_webhook(drop_pending_updates=True)
+
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
             CATEGORY: [MessageHandler(filters.Regex(f'^({"|".join(categories)})$'), set_category)],
-            FREQUENCY: [MessageHandler(filters.Regex(f'^({"|".join(["1 Hours", "10 Hours", "15 Hours", "30 Hours", "60 Hours"])})$'), set_frequency)]
+            FREQUENCY: [MessageHandler(filters.Regex(f'^({"|".join(["1 Hour", "10 Hours", "15 Hours", "30 Hours", "60 Hours"])})$'), set_frequency)]
         },
         fallbacks=[CommandHandler('start', start)]
     )
